@@ -1,0 +1,22 @@
+
+#' command: Process command line arguments
+#'
+#' Process arguments passed at the command line,
+#' as part of data analysis workflow.
+#'
+#' - [cmd_assign()] Process command line arguments
+#' - [extract_shell()] Turn a `cmd_assign()` call into a shell command
+#' - [extract_make()] Turn a `cmd_assign()` call into a Makefile rule
+#' - [shell_script()] Create a shell script
+#' - [makefile()] Create a Makefile
+#' - [Quick Start Guide](https://bayesiandemography.github.io/command/articles/quickstart.html)
+#'   How to use `cmd_assign()`
+#' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/workflow.html)
+#'   Safe, flexible data analysis workflows
+#' 
+#' @keywords internal
+"_PACKAGE"
+utils::globalVariables("argv")
+## usethis namespace: start
+## usethis namespace: end
+NULL
