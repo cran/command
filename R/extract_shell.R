@@ -81,7 +81,7 @@
 #' - [shell_script()] Create a shell script
 #'   from calls to [cmd_assign()]
 #' - [cmd_assign()] Process command line arguments
-#' - [Quick Start Guide](https://bayesiandemography.github.io/command/articles/quickstart.html)
+#' - [Quick Start](https://bayesiandemography.github.io/command/articles/quickstart.html)
 #'   How to use `cmd_assign()`
 #' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/workflow.html)
 #'   Safe, flexible data analysis workflows
@@ -120,7 +120,7 @@ extract_shell <- function(path_file, dir_shell = NULL) {
     check_dir(dir = dir_shell,
               nm = "dir_shell")
   else
-    dir_shell <- getwd()
+    dir_shell <- "."
   check_path_file_valid(path_file = path_file,
                         dir = dir_shell,
                         nm_dir_arg = "dir_shell",

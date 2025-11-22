@@ -94,7 +94,7 @@
 #' - [makefile()] Create a Makefile
 #'   from calls to [cmd_assign()]
 #' - [cmd_assign()] Process command line arguments
-#' - [Quick Start Guide](https://bayesiandemography.github.io/command/articles/quickstart.html)
+#' - [Quick Start](https://bayesiandemography.github.io/command/articles/quickstart.html)
 #'   How to use `cmd_assign()`
 #' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/workflow.html)
 #'   Safe, flexible data analysis workflows
@@ -135,7 +135,7 @@ extract_make <- function(path_file, dir_make = NULL) {
     check_dir(dir = dir_make,
               nm = "dir_make")
   else
-    dir_make <- getwd()
+    dir_make <- "."
   check_path_file_valid(path_file = path_file,
                         dir = dir_make,
                         nm_dir_arg = "dir_make",

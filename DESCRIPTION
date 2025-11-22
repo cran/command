@@ -1,7 +1,7 @@
 Package: command
 Type: Package
 Title: Process Command Line Arguments
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: c(
     person(given = "John",
            family = "Bryant",
@@ -10,10 +10,10 @@ Authors@R: c(
     person("Bayesian Demography Limited",
             role = "cph"))
 Description: Process command line arguments, as part of a data analysis
-    pipeline. The pipeline is controlled by a Makefile or shell
-    script. Functions to construct Makefiles and shell scripts are
-    included in a the package. The aim is a pipeline that
-    is modular, transparent, and reliable. 
+    workflow. 'command' makes it easier to construct a workflow consisting
+    of lots of small, self-contained scripts, all run from a Makefile or
+    shell script. The aim is a workflow that is modular, transparent,
+    and reliable. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 3.5.0)
@@ -27,9 +27,9 @@ URL: https://bayesiandemography.github.io/command/,
 Config/Needs/website: quarto, rmarkdown
 BugReports: https://github.com/bayesiandemography/command/issues
 NeedsCompilation: no
-Packaged: 2025-10-11 05:44:57 UTC; johnbryant
+Packaged: 2025-11-22 01:21:15 UTC; johnbryant
 Author: John Bryant [aut, cre],
   Bayesian Demography Limited [cph]
 Maintainer: John Bryant <john@bayesiandemography.com>
 Repository: CRAN
-Date/Publication: 2025-10-16 18:10:07 UTC
+Date/Publication: 2025-11-22 15:20:02 UTC
