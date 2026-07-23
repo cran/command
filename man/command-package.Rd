@@ -2,16 +2,19 @@
 % Please edit documentation in R/command-package.R
 \docType{package}
 \name{command-package}
-\alias{command}
 \alias{command-package}
+\alias{command}
 \title{command: Process command line arguments}
 \description{
-Process arguments passed at the command line,
-as part of data analysis workflow.
+Process command line arguments, allowing scripts to
+behave like functions, with well-defined inputs and outputs.
+Helps make data analysis workflows more modular,
+and therefore more transparent, flexible, and reliable.
 }
 \details{
 \itemize{
 \item \code{\link[=cmd_assign]{cmd_assign()}} Process command line arguments
+\item \code{\link[=use_renv]{use_renv()}} Activate a renv project before loading packages
 \item \code{\link[=extract_shell]{extract_shell()}} Turn a \code{cmd_assign()} call into a shell command
 \item \code{\link[=extract_make]{extract_make()}} Turn a \code{cmd_assign()} call into a Makefile rule
 \item \code{\link[=shell_script]{shell_script()}} Create a shell script
@@ -20,6 +23,8 @@ as part of data analysis workflow.
 How to use \code{cmd_assign()}
 \item \href{https://bayesiandemography.github.io/command/articles/workflow.html}{Modular Workflows for Data Analysis}
 Safe, flexible data analysis workflows
+\item \href{https://bayesiandemography.github.io/command/articles/a5_renv.html}{Using command with renv}
+Running pipeline scripts with renv
 }
 }
 \seealso{
@@ -34,10 +39,14 @@ Useful links:
 \author{
 \strong{Maintainer}: John Bryant \email{john@bayesiandemography.com}
 
+Authors:
+\itemize{
+  \item John Bryant \email{john@bayesiandemography.com}
+}
+
 Other contributors:
 \itemize{
   \item Bayesian Demography Limited [copyright holder]
 }
 
 }
-\keyword{internal}

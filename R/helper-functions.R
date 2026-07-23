@@ -1,5 +1,77 @@
 
 ## HAS_TESTS
+#' Join Path Components with Forward Slashes
+#'
+#' Base-R stand-in for `fs::path()`, using
+#' forward slashes so paths are suitable for
+#' Makefiles and shell scripts on all platforms.
+#' Components that are `"."` are dropped so that
+#' joining with the current directory does not
+#' produce a redundant `"./"` prefix.
+#'
+#' @param ... Path components
+#'
+#' @returns A character vector of length 1
+#'
+#' @noRd
+path_join <- function(...) {
+  parts <- unlist(list(...), use.names = FALSE)
+  parts <- parts[nzchar(parts) & parts != "."]
+  if (!length(parts))
+    return(".")
+  paste(parts, collapse = "/")
+}
+
+
+## HAS_TESTS
+#' Test Whether a Path is Absolute
+#'
+#' Base-R stand-in for `fs::is_absolute_path()`.
+#' Recognises Unix paths and Windows drive / UNC paths.
+#'
+#' @param path A length-1 character string
+#'
+#' @returns TRUE or FALSE
+#'
+#' @noRd
+is_absolute_path <- function(path) {
+  grepl("^(/|[A-Za-z]:([/\\\\]|$)|\\\\\\\\)", path)
+}
+
+
+## HAS_TESTS
+#' Make Paths Relative to a Start Directory
+#'
+#' Base-R stand-in for `fs::path_rel()`.
+#'
+#' @param path Character vector of paths
+#' @param start Directory to make paths relative to
+#'
+#' @returns A character vector the same length as `path`
+#'
+#' @noRd
+path_rel <- function(path, start = ".") {
+  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  start <- normalizePath(start, winslash = "/", mustWork = TRUE)
+  prefix <- paste0(start, "/")
+  ## Windows paths are case-insensitive; normalizePath() may still
+  ## disagree on drive-letter case (e.g. d: vs D: on WinBuilder).
+  fold <- if (.Platform$OS.type == "windows") tolower else identity
+  ans <- character(length(path))
+  for (i in seq_along(path)) {
+    p <- path[[i]]
+    if (identical(fold(p), fold(start)))
+      ans[[i]] <- "."
+    else if (startsWith(fold(p), fold(prefix)))
+      ans[[i]] <- substring(p, nchar(prefix) + 1L)
+    else
+      cli::cli_abort("Can't make {.path {path[[i]]}} relative to {.path {start}}.")
+  }
+  ans
+}
+
+
+## HAS_TESTS
 #' Reorder 'args_cmd' and Add Names So That
 #' It Aligns With 'args_dots'
 #'
@@ -79,8 +151,9 @@ assign_args <- function(args, envir, quiet) {
     nm <- cli::col_blue(nm)
     value <- cli::col_grey("with value")
     class <- cli::col_grey("and class")
+    empty <- if (identical(arg, "")) " (an empty string)" else ""
     if (!quiet) {
-      cli::cli_alert_success("{assigned} {nm} {value} {.val {arg}} {class} {.val {class(arg)}}.")
+      cli::cli_alert_success("{assigned} {nm} {value} {.val {arg}}{empty} {class} {.val {class(arg)}}.")
     }
   }
   invisible(args)
@@ -101,8 +174,8 @@ assign_args <- function(args, envir, quiet) {
 #'
 #' @noRd
 extract_shell_if_possible <- function(file, dir_shell, quiet) {
-  path_file <- fs::path(dir_shell, file)
-  ext <- fs::path_ext(path_file)
+  path_file <- path_join(dir_shell, file)
+  ext <- tools::file_ext(path_file)
   if (!ext %in% c("r", "R"))
     return(NULL)
   text <- paste(readLines(path_file), collapse = "\n")
@@ -145,8 +218,8 @@ extract_shell_if_possible <- function(file, dir_shell, quiet) {
 #'
 #' @noRd
 extract_make_if_possible <- function(file, dir_make, quiet) {
-  path_file <- fs::path(dir_make, file)
-  ext <- fs::path_ext(path_file)
+  path_file <- path_join(dir_make, file)
+  ext <- tools::file_ext(path_file)
   if (!ext %in% c("r", "R"))
     return(NULL)
   text <- paste(readLines(path_file), collapse = "\n")
@@ -188,6 +261,18 @@ extract_make_if_possible <- function(file, dir_make, quiet) {
 #'
 #' @noRd
 coerce_arg_cmd <- function(arg_cmd, arg_dots, nm_cmd, nm_dots) {
+  ## Empty values (e.g. Make expands --v=$(V) to --v= when V is
+  ## undefined) are allowed for character arguments, but not for
+  ## other classes, where they are almost always a mistake.
+  if (!is.character(arg_dots) && identical(arg_cmd, "")) {
+    cli::cli_abort(c("Empty value passed at command line for argument {.arg {nm_dots}}.",
+                     i = "Value specified by {.fun cmd_assign}: {.val {arg_dots}}.",
+                     i = "Class specified by {.fun cmd_assign}: {.cls {class(arg_dots)}}.",
+                     i = paste("Empty values are only allowed when {.fun cmd_assign}",
+                               "specifies a character argument."),
+                     i = paste("If this came from a Makefile, check that the Make",
+                               "variable in {.code --{nm_dots}=$(...)} is defined.")))
+  }
   if (is.character(arg_dots))
     ans <- arg_cmd
   else if (is.integer(arg_dots))
@@ -497,9 +582,9 @@ is_varname_valid <- function(nm) {
 make_commands <- function(path_files,
                           dir_shell,
                           quiet) {
-  path_files_comb <- fs::path(dir_shell, path_files)
-  file <- fs::dir_ls(path_files_comb)
-  file <- fs::path_rel(file, start = dir_shell)
+  path_files_comb <- path_join(dir_shell, path_files)
+  file <- list.files(path_files_comb, full.names = TRUE)
+  file <- path_rel(file, start = dir_shell)
   ans <- .mapply(extract_shell_if_possible,
                  dots = list(file = file),
                  MoreArgs = list(dir_shell = dir_shell,
@@ -532,9 +617,9 @@ make_commands <- function(path_files,
 make_rules <- function(path_files,
                        dir_make,
                        quiet) {
-  path_files_comb <- fs::path(dir_make, path_files)
-  file <- fs::dir_ls(path_files_comb)
-  file <- fs::path_rel(file, start = dir_make)
+  path_files_comb <- path_join(dir_make, path_files)
+  file <- list.files(path_files_comb, full.names = TRUE)
+  file <- path_rel(file, start = dir_make)
   ans <- .mapply(extract_make_if_possible,
                  dots = list(file = file),
                  MoreArgs = list(dir_make = dir_make,

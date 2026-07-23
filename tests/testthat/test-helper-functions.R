@@ -1,4 +1,58 @@
 
+## 'path_join' ----------------------------------------------------------------
+
+test_that("'path_join' joins with forward slashes", {
+  expect_identical(path_join("a", "b", "c"), "a/b/c")
+  expect_identical(path_join(".", "src/script.R"), "src/script.R")
+  expect_identical(path_join("."), ".")
+  expect_identical(path_join("src", ".", "script.R"), "src/script.R")
+})
+
+
+## 'is_absolute_path' ---------------------------------------------------------
+
+test_that("'is_absolute_path' recognises absolute paths", {
+  expect_true(is_absolute_path("/tmp"))
+  expect_true(is_absolute_path("C:/"))
+  expect_true(is_absolute_path("C:\\Windows"))
+  expect_true(is_absolute_path("\\\\server\\share"))
+  expect_false(is_absolute_path("src/script.R"))
+  expect_false(is_absolute_path("./script.R"))
+  expect_false(is_absolute_path("~/script.R"))
+})
+
+
+## 'path_rel' -----------------------------------------------------------------
+
+test_that("'path_rel' makes paths relative to start", {
+  dir_tmp <- tempfile(tmpdir = getwd())
+  if (file.exists(dir_tmp))
+    unlink(dir_tmp, recursive = TRUE)
+  dir.create(dir_tmp)
+  dir.create(file.path(dir_tmp, "src"))
+  writeLines("1", con = file.path(dir_tmp, "src/script.R"))
+  expect_identical(path_rel(file.path(dir_tmp, "src/script.R"), start = dir_tmp),
+                   "src/script.R")
+  expect_identical(path_rel(dir_tmp, start = dir_tmp), ".")
+  unlink(dir_tmp, recursive = TRUE)
+})
+
+test_that("'path_rel' works when tempfile is under getwd() on Windows", {
+  skip_if_not(.Platform$OS.type == "windows")
+  ## tempfile()/getwd() can disagree on drive-letter case after
+  ## normalizePath() (e.g. d: vs D:), which broke extract_make() on WinBuilder.
+  dir_tmp <- tempfile(tmpdir = getwd())
+  if (file.exists(dir_tmp))
+    unlink(dir_tmp, recursive = TRUE)
+  dir.create(dir_tmp)
+  on.exit(unlink(dir_tmp, recursive = TRUE), add = TRUE)
+  writeLines("1", con = file.path(dir_tmp, "script.R"))
+  rel <- path_rel(file.path(dir_tmp, "script.R"), start = getwd())
+  expect_false(is_absolute_path(rel))
+  expect_match(rel, "script\\.R$")
+})
+
+
 ## 'align_cmd_to_dots' --------------------------------------------------------
 
 test_that("'align_cmd_to_dots' works on typical inputs supplied by makefile", {
@@ -57,6 +111,17 @@ test_that("'assign_args' creates expected message", {
     expect_message(
       assign_args(args = args, envir = envir, quiet = FALSE),
       "Assigned object"
+    )
+  )
+})
+
+test_that("'assign_args' notes empty string in message", {
+  args <- list(v = "")
+  envir <- new.env()
+  suppressMessages(
+    expect_message(
+      assign_args(args = args, envir = envir, quiet = FALSE),
+      "an empty string"
     )
   )
 })
@@ -257,6 +322,32 @@ test_that("'coerce_arg_cmd' works with character", {
                                  nm_dots = "val")
   ans_expected <- "X"
   expect_identical(ans_obtained, ans_expected)
+})
+
+test_that("'coerce_arg_cmd' allows empty string for character", {
+  ans_obtained <- coerce_arg_cmd(arg_cmd = "",
+                                 arg_dots = "a",
+                                 nm_cmd = "v",
+                                 nm_dots = "v")
+  expect_identical(ans_obtained, "")
+})
+
+test_that("'coerce_arg_cmd' rejects empty string for non-character", {
+  expect_error(coerce_arg_cmd(arg_cmd = "",
+                             arg_dots = 1L,
+                             nm_cmd = "v",
+                             nm_dots = "v"),
+               "Empty value passed at command line for argument `v`.")
+  expect_error(coerce_arg_cmd(arg_cmd = "",
+                             arg_dots = TRUE,
+                             nm_cmd = "v",
+                             nm_dots = "v"),
+               "Empty value passed at command line for argument `v`.")
+  expect_error(coerce_arg_cmd(arg_cmd = "",
+                             arg_dots = as.Date("2000-01-01"),
+                             nm_cmd = "v",
+                             nm_dots = "v"),
+               "Empty value passed at command line for argument `v`.")
 })
 
 test_that("'coerce_arg_cmd' works with integer", {
@@ -526,6 +617,26 @@ test_that("'get_args_cmd' works when no arguments passed", {
   system(cmd)
   args <- readRDS("args.rds")
   expect_identical(args, list())
+  setwd(dir_curr)
+  unlink(dir_tmp, recursive = TRUE)
+})
+
+## Empty value after '=' (e.g. Make expands --v=$(V) when V is undefined)
+test_that("'get_args_cmd' treats --v= as named argument with empty string", {
+  dir_curr <- getwd()
+  dir_tmp <- tempfile(tmpdir = getwd())
+  if (file.exists(dir_tmp))
+    unlink(dir_tmp, recursive = TRUE)
+  dir.create(dir_tmp)
+  setwd(dir_tmp)
+  writeLines(c("args <- command:::get_args_cmd()",
+               "saveRDS(args, file = 'args.rds')"),
+             con = "script.R")
+  cmd <- sprintf("%s/bin/Rscript script.R --v=", R.home())
+  system(cmd)
+  ans_obtained <- readRDS("args.rds")
+  ans_expected <- list(v = "")
+  expect_identical(ans_obtained, ans_expected)
   setwd(dir_curr)
   unlink(dir_tmp, recursive = TRUE)
 })
