@@ -15,7 +15,7 @@ makefile(
 \arguments{
 \item{path_files}{A path from \code{dir_make} to a
 directory with R scripts containing
-calls to \code{\link[=cmd_assign]{cmd_assign()}}.
+calls to \code{\link[=cmd_assign]{cmd_assign()}} or \code{\link[=cmd_assign_collect]{cmd_assign_collect()}}.
 Optional.}
 
 \item{dir_make}{The directory where
@@ -45,6 +45,11 @@ The Makefile can include
 rules extracted from existing R files.
 }
 \details{
+The Makefile is a draft and needs editing before use.
+\code{makefile()} cannot infer every rule, and a file path
+that contains a space or a character special to Make
+must be corrected in the dependency line.
+
 To create a Makefile in the \code{files}
 directory, set \code{files} to \code{"."}.
 
@@ -110,7 +115,7 @@ More on \code{makefile()}
 \item \code{\link[=extract_make]{extract_make()}} Turn a \code{\link[=cmd_assign]{cmd_assign()}} call into a Makefile rule
 \item \code{\link[=shell_script]{shell_script()}} Shell script equivalent of \code{makefile()}
 \item \code{\link[=cmd_assign]{cmd_assign()}} Process command line arguments
-\item \href{https://bayesiandemography.github.io/command/articles/workflow.html}{Modular Workflows for Data Analysis}
+\item \href{https://bayesiandemography.github.io/command/articles/a4_workflow.html}{Modular Workflows for Data Analysis}
 Safe, flexible data analysis workflows
 \item \href{https://CRAN.R-project.org/package=littler}{littler} Alternative to Rscript
 }

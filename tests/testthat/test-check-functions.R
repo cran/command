@@ -42,6 +42,19 @@ test_that("'check_args_cmd' throws expected error lengths of 'args_cmd' 'args_do
                      "specified with `cmd_assign\\(\\)`."))
 })
 
+test_that("'check_args_cmd' rejects a named argument passed more than once", {
+  args_cmd <- list(n_iter = "1", n_iter = "2")
+  args_dots <- list(n_iter = 10L, .out = "out.rds")
+  expect_error(check_args_cmd(args_cmd = args_cmd,
+                              args_dots = args_dots),
+               "Named argument `n_iter` was passed more than once")
+  args_cmd <- list("out.rds", use_log = "TRUE", use_log = "FALSE")
+  args_dots <- list(.out = "out.rds", use_log = TRUE)
+  expect_error(check_args_cmd(args_cmd = args_cmd,
+                              args_dots = args_dots),
+               "Named argument `use_log` was passed more than once")
+})
+
 test_that("'check_args_cmd' throws expected error lengths of 'args_cmd' 'args_dots' differ - no named args", {
   args_cmd <- list("file1", "file2")
   args_dots  <- list(f1 = "f1")
@@ -76,6 +89,66 @@ test_that("'check_args_dots' throws error when values have wrong length", {
                  "Argument `b` in call to `cmd_assign\\(\\)` has length 0.")
 })
 
+test_that("'check_args_dots' allows a character vector for cmd_assign_collect", {
+  args_dots <- list(files = c("data/a.csv", "out/combined.rds"),
+                    use_log = TRUE)
+  expect_true(check_args_dots(args_dots = args_dots, variadic = TRUE))
+  expect_true(check_args_dots(args_dots = list(files = character()),
+                              variadic = TRUE))
+  expect_error(check_args_dots(args_dots = list(files = c("a.csv", "out.rds"),
+                                                n = 1:2),
+                               variadic = TRUE),
+               "Argument `n` in call to `cmd_assign_collect\\(\\)` has length 2.")
+})
+
+
+## 'check_args_cmd_dots' ------------------------------------------------------
+
+test_that("'check_args_cmd_dots' returns TRUE when one character argument is left over", {
+  args_cmd <- list("data/a.csv", "out.rds", use_log = "TRUE")
+  args_dots <- list(files = c("data/a.csv", "out.rds"), use_log = TRUE)
+  expect_true(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots))
+  args_cmd <- list(use_log = "TRUE")
+  expect_true(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots))
+})
+
+test_that("'check_args_cmd_dots' rejects a named argument passed more than once", {
+  args_cmd <- list("data/a.csv", use_log = "TRUE", use_log = "FALSE")
+  args_dots <- list(files = "out.rds", use_log = TRUE)
+  expect_error(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots),
+               "Named argument `use_log` was passed more than once")
+})
+
+test_that("'check_args_cmd_dots' errors when a named command line argument is unknown", {
+  args_cmd <- list(label = "run")
+  args_dots <- list(files = "out.rds", use_log = TRUE)
+  expect_error(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots),
+               "not specified with `cmd_assign_collect\\(\\)`")
+})
+
+test_that("'check_args_cmd_dots' errors when the vector argument is passed by name", {
+  args_cmd <- list("data/a.csv", files = "out.rds", use_log = "TRUE")
+  args_dots <- list(files = c("data/a.csv", "out.rds"), use_log = TRUE)
+  expect_error(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots),
+               "Every argument was passed by name")
+})
+
+test_that("'check_args_cmd_dots' errors when two arguments are left unnamed", {
+  args_cmd <- list("data/a.csv", "out.rds")
+  args_dots <- list(files = c("data/a.csv", "out.rds"),
+                    label = "run",
+                    use_log = TRUE)
+  expect_error(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots),
+               "More than one argument was left")
+})
+
+test_that("'check_args_cmd_dots' errors when the leftover argument is not character", {
+  args_cmd <- list("data/a.csv", files = "out.rds")
+  args_dots <- list(files = c("data/a.csv", "out.rds"), use_log = TRUE)
+  expect_error(check_args_cmd_dots(args_cmd = args_cmd, args_dots = args_dots),
+               "must be <character>")
+})
+
 
 ## 'check_dir' ----------------------------------------------------------------
 
@@ -96,7 +169,7 @@ test_that("'check_dir' throws error when dir length != 1", {
 test_that("'check_dir' throws error when dir does not exist", {
   if (!file.exists("wrong/wrong_again")) {
     expect_error(check_dir("wrong/wrong_again", nm = "x"),
-                 "Problem with `x`.")
+                 "does not exist")
   }
 })
 

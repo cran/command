@@ -15,7 +15,7 @@ shell_script(
 \arguments{
 \item{path_files}{A path from \code{dir_shell} to a
 directory with R scripts containing
-calls to \code{\link[=cmd_assign]{cmd_assign()}}.}
+calls to \code{\link[=cmd_assign]{cmd_assign()}} or \code{\link[=cmd_assign_collect]{cmd_assign_collect()}}.}
 
 \item{dir_shell}{The directory where
 \code{shell_script()} will create the shell script.
@@ -44,6 +44,12 @@ consisting of commands
 extracted from existing R files.
 }
 \details{
+\code{shell_script()} tries to put the commands in the order
+they need to run, by matching each script's output path
+with the input paths of the other scripts.
+It can get this order wrong, so the shell script may
+still need editing.
+
 To create a shell script in the \code{files}
 directory, set \code{files} to \code{"."}.
 
@@ -75,10 +81,14 @@ with_tempdir({
                "results <- x + 1",
                "saveRDS(results, file = .out)"),
              con = "src/results.R")
-  writeLines(c("cmd_assign(x = 1, .out = 'out/more_results.rds')",
-               "more_results <- x + 2",
+  writeLines(c("cmd_assign(.results = 'out/results.rds', .out = 'out/more_results.rds')",
+               "results <- readRDS(.results)",
+               "more_results <- results + 2",
                "saveRDS(more_results, file = .out)"),
              con = "src/more_results.R")
+
+  ## the shell script runs 'results.R' first, because
+  ## 'more_results.R' reads the file that 'results.R' writes
 
   ## call 'shell_script()'
   shell_script(path_files = "src",
@@ -106,7 +116,7 @@ Introduction to Rscript
 \item \code{\link[=extract_shell]{extract_shell()}} Turn a \code{\link[=cmd_assign]{cmd_assign()}} call into a shell command
 \item \code{\link[=makefile]{makefile()}} Makefile equivalent of \code{shell_script()}
 \item \code{\link[=cmd_assign]{cmd_assign()}} Process command line arguments
-\item \href{https://bayesiandemography.github.io/command/articles/workflow.html}{Modular Workflows for Data Analysis}
+\item \href{https://bayesiandemography.github.io/command/articles/a4_workflow.html}{Modular Workflows for Data Analysis}
 Safe, flexible data analysis workflows
 \item \href{https://CRAN.R-project.org/package=littler}{littler} Alternative to Rscript
 }

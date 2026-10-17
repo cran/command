@@ -1,9 +1,39 @@
 
 ## HAS_TESTS
+#' Reject a Named Command-Line Argument Passed More Than Once
+#'
+#' Unnamed arguments may be repeated. Names are the names
+#' already parsed from the command line, without the leading dashes.
+#'
+#' @param nms_cmd Character vector of command-line names.
+#' Empty strings are unnamed arguments. `NULL` means every
+#' argument is unnamed.
+#' @param nm_fun Name of the calling function, used in the message.
+#'
+#' @returns TRUE, invisibly.
+#'
+#' @noRd
+check_names_cmd_unique <- function(nms_cmd, nm_fun) {
+  if (is.null(nms_cmd))
+    return(invisible(TRUE))
+  nms_named <- nms_cmd[nzchar(nms_cmd)]
+  i_dup <- match(TRUE, duplicated(nms_named), nomatch = 0L)
+  if (i_dup > 0L) {
+    nm <- nms_named[[i_dup]]
+    cli::cli_abort(c(paste("Named argument {.arg {nm}} was passed more than once",
+                           "at the command line."),
+                     i = "{.fun {nm_fun}} accepts each named argument only once."))
+  }
+  invisible(TRUE)
+}
+
+
+## HAS_TESTS
 #' Check Values Passed at Command Line
 #'
 #' Check that any named argument passed
 #' at command line are also found in 'dots',
+#' that no named argument is repeated,
 #' and that the number of arguments passed
 #' at the command line matches the number
 #' present in 'dots'.
@@ -17,6 +47,8 @@
 check_args_cmd <- function(args_cmd, args_dots) {
   nms_cmd <- names(args_cmd)
   nms_dots <- names(args_dots)
+  check_names_cmd_unique(nms_cmd = nms_cmd,
+                         nm_fun = "cmd_assign")
   nms_cmd_nzchar <- nms_cmd[nzchar(nms_cmd)]
   ## any named arguments used in the command line
   ## should be present in dots
@@ -65,14 +97,17 @@ check_args_cmd <- function(args_cmd, args_dots) {
 #'                Date, POSIXct, POSIXlt
 #'
 #' @param args_dots Dots argument from
-#' [cmd_assign()].
+#' [cmd_assign()] or `cmd_assign_collect()`.
+#' @param variadic Whether the caller is `cmd_assign_collect()`.
+#' When `TRUE`, character arguments may have any length.
 #'
 #' @return TRUE, invisibly
 #'
 #' @noRd
-check_args_dots <- function(args_dots) {
+check_args_dots <- function(args_dots, variadic = FALSE) {
   n <- length(args_dots)
   nms <- names(args_dots)
+  nm_fun <- if (variadic) "cmd_assign_collect" else "cmd_assign"
   check_names_args(nms)
   is_character <- vapply(args_dots, is.character, NA, USE.NAMES = FALSE)
   is_integer <- vapply(args_dots, is.integer, NA, USE.NAMES = FALSE)
@@ -94,19 +129,94 @@ check_args_dots <- function(args_dots) {
     cls_invalid <- class(val_invalid)
     valid_classes <- c("character", "integer", "numeric", "logical",
                        "Date", "POSIXct", "POSIXlt", "NULL")
-    cli::cli_abort(c("Can't process argument {.arg {nm_invalid}} in call to {.fun cmd_assign}.",
+    cli::cli_abort(c("Can't process argument {.arg {nm_invalid}} in call to {.fun {nm_fun}}.",
                      i = "{.arg {nm_invalid}} has class {.val {cls_invalid}}.",
-                     i = paste("{.fun cmd_assign} can only process arguments with classes",
+                     i = paste("{.fun {nm_fun}} can only process arguments with classes",
                                "{.val {valid_classes}}.")))
   }
   lengths <- lengths(args_dots)
   is_valid_length <- ifelse(is_null, lengths == 0L, lengths == 1L)
+  if (variadic)
+    is_valid_length <- is_valid_length | is_character
   i_invalid_length <- match(FALSE, is_valid_length, nomatch = 0L)
   if (i_invalid_length > 0L) {
     nm_invalid_length <- nms[[i_invalid_length]]
     invalid_length <- lengths[[i_invalid_length]]
-    cli::cli_abort(paste("Argument {.arg {nm_invalid_length}} in call to {.fun cmd_assign}",
+    cli::cli_abort(paste("Argument {.arg {nm_invalid_length}} in call to {.fun {nm_fun}}",
                          "has length {.val {invalid_length}}."))
+  }
+  invisible(TRUE)
+}
+
+
+## HAS_TESTS
+#' Check Command Line Arguments for 'cmd_assign_collect'
+#'
+#' Named command line arguments must match arguments
+#' of `cmd_assign_collect()` by name, and no named argument
+#' may be repeated. Exactly one argument must be left over,
+#' and that argument must be character.
+#' It receives every unnamed command line value.
+#'
+#' @param args_cmd A list, possibly with names.
+#' @param args_dots A named list.
+#'
+#' @return TRUE, invisibly.
+#'
+#' @noRd
+check_args_cmd_dots <- function(args_cmd, args_dots) {
+  nms_cmd <- names(args_cmd)
+  n_cmd <- length(args_cmd)
+  if (is.null(nms_cmd))
+    nms_cmd <- rep("", times = n_cmd)
+  nms_dots <- names(args_dots)
+  check_names_cmd_unique(nms_cmd = nms_cmd,
+                         nm_fun = "cmd_assign_collect")
+  is_named <- nzchar(nms_cmd)
+  nms_cmd_named <- nms_cmd[is_named]
+  for (nm in nms_cmd_named) {
+    if (!(nm %in% nms_dots)) {
+      cli::cli_abort(c("Problem with argument {.arg {nm}}.",
+                       i = paste("Named argument {.arg {nm}} passed at command line",
+                                 "but not specified with {.fun cmd_assign_collect}."),
+                       i = paste("Argument{?s} specified with {.fun cmd_assign_collect}:",
+                                 "{.arg {nms_dots}}.")))
+    }
+  }
+  unmatched <- !(nms_dots %in% nms_cmd_named)
+  n_unmatched <- sum(unmatched)
+  nms_unmatched <- nms_dots[unmatched]
+  if (n_unmatched == 0L) {
+    n_unnamed <- sum(!is_named)
+    msg <- c("Every argument was passed by name at the command line.",
+             i = paste("Exactly one argument of {.fun cmd_assign_collect} must be left unnamed,",
+                       "so that it can receive the unnamed command-line arguments."))
+    if (n_unnamed > 0L)
+      msg <- c(msg,
+               i = "{.val {n_unnamed}} unnamed argument{?s} passed at command line.")
+    if (length(nms_cmd_named) > 0L)
+      msg <- c(msg,
+               i = "Named argument{?s} passed at command line: {.arg {nms_cmd_named}}.")
+    msg <- c(msg,
+             i = paste("Argument{?s} specified with {.fun cmd_assign_collect}:",
+                       "{.arg {nms_dots}}."))
+    cli::cli_abort(msg)
+  }
+  if (n_unmatched > 1L) {
+    cli::cli_abort(c("More than one argument was left to receive unnamed command-line arguments.",
+                     i = "Exactly one argument must be left unnamed.",
+                     i = "Argument{?s} not passed by name: {.arg {nms_unmatched}}.",
+                     i = paste("Argument{?s} specified with {.fun cmd_assign_collect}:",
+                               "{.arg {nms_dots}}.")))
+  }
+  nm_vec <- nms_unmatched[[1L]]
+  arg_default <- args_dots[[nm_vec]]
+  if (!is.character(arg_default)) {
+    cli::cli_abort(c(paste("Argument {.arg {nm_vec}} must receive the unnamed",
+                           "command-line arguments, but it is not {.cls character}."),
+                     i = "The argument left unnamed must be {.cls character}.",
+                     i = paste("Class specified by {.fun cmd_assign_collect}:",
+                               "{.cls {class(arg_default)}}.")))
   }
   invisible(TRUE)
 }
@@ -125,7 +235,7 @@ check_dir <- function(dir, nm) {
     cli::cli_abort("{.arg {nm}} does not have length 1.")
   if (!dir.exists(dir))
     cli::cli_abort(c("Problem with {.arg {nm}}.",
-                     i = "Directory {.file {dir}} does exist."))
+                     i = "Directory {.file {dir}} does not exist."))
   invisible(TRUE)
 }
 

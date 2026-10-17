@@ -5,6 +5,12 @@
 #' consisting of commands
 #' extracted from existing R files.
 #'
+#' `shell_script()` tries to put the commands in the order
+#' they need to run, by matching each script's output path
+#' with the input paths of the other scripts.
+#' It can get this order wrong, so the shell script may
+#' still need editing.
+#'
 #' To create a shell script in the `files`
 #' directory, set `files` to `"."`.
 #'
@@ -24,7 +30,7 @@
 #'
 #' @param path_files A path from `dir_shell` to a
 #' directory with R scripts containing
-#' calls to [cmd_assign()].
+#' calls to [cmd_assign()] or [cmd_assign_collect()].
 #' @param dir_shell The directory where
 #' `shell_script()` will create the shell script.
 #' If no value is supplied, then `shell_script()`
@@ -47,7 +53,7 @@
 #' - [extract_shell()] Turn a [cmd_assign()] call into a shell command
 #' - [makefile()] Makefile equivalent of `shell_script()`
 #' - [cmd_assign()] Process command line arguments
-#' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/workflow.html)
+#' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/a4_workflow.html)
 #'   Safe, flexible data analysis workflows
 #' - [littler](https://CRAN.R-project.org/package=littler) Alternative to Rscript
 #'
@@ -71,10 +77,14 @@
 #'                "results <- x + 1",
 #'                "saveRDS(results, file = .out)"),
 #'              con = "src/results.R")
-#'   writeLines(c("cmd_assign(x = 1, .out = 'out/more_results.rds')",
-#'                "more_results <- x + 2",
+#'   writeLines(c("cmd_assign(.results = 'out/results.rds', .out = 'out/more_results.rds')",
+#'                "results <- readRDS(.results)",
+#'                "more_results <- results + 2",
 #'                "saveRDS(more_results, file = .out)"),
 #'              con = "src/more_results.R")
+#'
+#'   ## the shell script runs 'results.R' first, because
+#'   ## 'more_results.R' reads the file that 'results.R' writes
 #'
 #'   ## call 'shell_script()'
 #'   shell_script(path_files = "src",
@@ -108,6 +118,8 @@ shell_script <- function(path_files,
                          nm = "name_shell")
   check_flag(x = overwrite,
              nm = "overwrite")
+  check_flag(x = quiet,
+             nm = "quiet")
   lines <- ""
   commands <- make_commands(path_files = path_files,
                             dir_shell = dir_shell,

@@ -5,6 +5,11 @@
 #' The Makefile can include
 #' rules extracted from existing R files.
 #'
+#' The Makefile is a draft and needs editing before use.
+#' `makefile()` cannot infer every rule, and a file path
+#' that contains a space or a character special to Make
+#' must be corrected in the dependency line.
+#'
 #' To create a Makefile in the `files`
 #' directory, set `files` to `"."`.
 #'
@@ -24,7 +29,7 @@
 #'
 #' @param path_files A path from `dir_make` to a
 #' directory with R scripts containing
-#' calls to [cmd_assign()].
+#' calls to [cmd_assign()] or [cmd_assign_collect()].
 #' Optional.
 #' @param dir_make The directory where
 #' `makefile()` will create the Makefile.
@@ -49,7 +54,7 @@
 #' - [extract_make()] Turn a [cmd_assign()] call into a Makefile rule
 #' - [shell_script()] Shell script equivalent of `makefile()`
 #' - [cmd_assign()] Process command line arguments
-#' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/workflow.html)
+#' - [Modular Workflows for Data Analysis](https://bayesiandemography.github.io/command/articles/a4_workflow.html)
 #'   Safe, flexible data analysis workflows
 #' - [littler](https://CRAN.R-project.org/package=littler) Alternative to Rscript
 #'

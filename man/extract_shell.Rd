@@ -8,8 +8,8 @@ extract_shell(path_file, dir_shell = NULL)
 }
 \arguments{
 \item{path_file}{Path to the R script containing
-the call to \code{\link[=cmd_assign]{cmd_assign()}}. The path
-starts at \code{dir_shell}.}
+the call to \code{\link[=cmd_assign]{cmd_assign()}} or \code{\link[=cmd_assign_collect]{cmd_assign_collect()}}.
+The path starts at \code{dir_shell}.}
 
 \item{dir_shell}{The directory that contains
 the shell script. The default is
@@ -22,7 +22,7 @@ shell command. However, \code{extract_shell()}
 invisibly returns a text string with the command.
 }
 \description{
-Extract a call to \code{\link[=cmd_assign]{cmd_assign()}} from an
+Extract a call to \code{\link[=cmd_assign]{cmd_assign()}} or \code{\link[=cmd_assign_collect]{cmd_assign_collect()}} from an
 R script, and turn it into a shell command.
 }
 \section{The components of a shell command}{
@@ -51,11 +51,11 @@ Rscript passes to \code{src/model.R}
 \item Step 1. Write an R script that carries out
 a step in analysis (eg tidying data, fitting
 a model, making a graph.) This script
-will contain a call to \code{\link[=cmd_assign]{cmd_assign()}},
+will contain a call to \code{\link[=cmd_assign]{cmd_assign()}} or \code{\link[=cmd_assign_collect]{cmd_assign_collect()}},
 and  will be the first argument passed to
 Rscript in the shell command.
 When writing and testing the script,
-use \code{\link[=cmd_assign]{cmd_assign()}} interactively.
+use \code{\link[=cmd_assign]{cmd_assign()}} or \code{\link[=cmd_assign_collect]{cmd_assign_collect()}} interactively.
 \item Step 2. Once the R script is working correctly,
 call \code{extract_shell()}, and add the command
 to your shell script.
@@ -76,16 +76,15 @@ report.qmd
 }
 
 \section{Identifying file arguments}{
-To construct the rule, \code{extract_shell()} needs to
-be able to identify arguments that refer to a
-file name. To do so, it uses the following heuristic:
+To identify arguments that refer to file names,
+\code{extract_shell()} uses the following rules:
 \itemize{
 \item if the call includes arguments whose names start with
 a dot, then these arguments are assumed to
 refer to file names;
 \item otherwise, find arguments whose values
 actually are file names
-(as determined by \code{\link[=file.exists]{file.exists()}}) or that look
+(as determined by \code{\link[=file.exists]{file.exists()}}), or that look
 like they could be.
 }
 }
@@ -125,9 +124,11 @@ Introduction to Rscript
 \item \code{\link[=shell_script]{shell_script()}} Create a shell script
 from calls to \code{\link[=cmd_assign]{cmd_assign()}}
 \item \code{\link[=cmd_assign]{cmd_assign()}} Process command line arguments
-\item \href{https://bayesiandemography.github.io/command/articles/quickstart.html}{Quick Start}
-How to use \code{cmd_assign()}
-\item \href{https://bayesiandemography.github.io/command/articles/workflow.html}{Modular Workflows for Data Analysis}
+\item \code{\link[=cmd_assign_collect]{cmd_assign_collect()}} Process command line arguments when
+the number of arguments is not known in advance
+\item \href{https://bayesiandemography.github.io/command/articles/a1_quickstart.html}{Quick Start}
+How to use \code{cmd_assign()} and \code{cmd_assign_collect()}
+\item \href{https://bayesiandemography.github.io/command/articles/a4_workflow.html}{Modular Workflows for Data Analysis}
 Safe, flexible data analysis workflows
 }
 }
